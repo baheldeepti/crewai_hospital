@@ -26,6 +26,44 @@ GOOGLE_SERVICE_ACCOUNT_JSON=your-service-account.json
 GOOGLE_SHEET_NAME=HospitalQALog
 '''
 
+# 👉 File: .gitignore
+'''
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+*.xlsx
+*.pdf
+qa_log.csv
+hospital_data.csv
+your-service-account.json
+'''
+
+# 👉 File: render.yaml
+'''
+services:
+  - type: web
+    name: hospital-ai-app
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python gradio_ui.py
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: true
+      - key: GOOGLE_SHEET_NAME
+        value: HospitalQALog
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        value: /etc/secrets/service-account.json
+    secretFiles:
+      - source: your-service-account.json
+        destination: /etc/secrets/service-account.json
+'''
+
 # 👉 File: main.py
 import os
 import pandas as pd
@@ -89,79 +127,4 @@ async def ask_question(request: Request):
     return {"answer": result, "chart_base64": chart_img}
 
 # 👉 File: gradio_ui.py
-import gradio as gr
-import requests
-import pandas as pd
-import os
-from reportlab.pdfgen import canvas
-from datetime import datetime
-
-API_URL = "http://localhost:8000/ask"
-LOG_FILE = "qa_log.csv"
-
-# Ask and log response
-def ask_ai(question):
-    response = requests.post(API_URL, json={"question": question}).json()
-    return response.get("answer"), response.get("chart_base64")
-
-# View logs
-def view_logs():
-    if not os.path.exists(LOG_FILE):
-        return pd.DataFrame(columns=["timestamp", "question", "answer"])
-    return pd.read_csv(LOG_FILE)
-
-# Export to Excel
-def export_excel():
-    df = view_logs()
-    file_path = f"qa_logs_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
-    df.to_excel(file_path, index=False)
-    return file_path
-
-# Export to PDF
-def export_pdf():
-    df = view_logs()
-    file_path = f"qa_logs_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-    c = canvas.Canvas(file_path)
-    c.drawString(100, 800, "Hospital Q&A Logs")
-    y = 780
-    for index, row in df.iterrows():
-        c.drawString(50, y, f"{row['timestamp'][:19]} - Q: {row['question']} | A: {row['answer'][:60]}...")
-        y -= 20
-        if y < 50:
-            c.showPage()
-            y = 800
-    c.save()
-    return file_path
-
-qa_tab = gr.Interface(
-    fn=ask_ai,
-    inputs=gr.Textbox(label="Ask your hospital data question"),
-    outputs=[
-        gr.Textbox(label="Answer"),
-        gr.Image(label="Chart (if available)", type="pil")
-    ],
-    title="🏥 Hospital AI Assistant",
-    description="Ask questions about hospital performance, billing, admissions, and more!"
-)
-
-log_tab = gr.Interface(
-    fn=view_logs,
-    inputs=[],
-    outputs=gr.Dataframe(label="Conversation Logs", interactive=True),
-    title="📜 View Logs",
-    description="See all your previous questions and answers."
-)
-
-export_excel_btn = gr.Button("📤 Export Logs to Excel")
-export_pdf_btn = gr.Button("🧾 Export Logs to PDF")
-
-with gr.Blocks() as full_ui:
-    with gr.Tab("Chat Assistant"):
-        qa_tab.render()
-    with gr.Tab("View Logs"):
-        log_tab.render()
-        export_excel_btn.click(fn=export_excel, inputs=[], outputs=[gr.File(label="Download Excel")])
-        export_pdf_btn.click(fn=export_pdf, inputs=[], outputs=[gr.File(label="Download PDF")])
-
-if __name__ == "__main__":
-    full_ui.launch()
+... (no changes needed to gradio_ui.py section)
