@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: hospital-ai-app
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python gradio_ui.py
+    envVars:
+      - key: OPENAI_API_KEY
+        value: your-openai-key
+      - key: GOOGLE_SHEET_NAME
+        value: HospitalQALog
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        value: your-service-account.json (use Render Secret File)
